@@ -52,7 +52,7 @@ if [ -n "$AWG_PRIVATE_KEY" ]; then
     echo "configuring WARP PrivateKey..."
     sed -i "s|^PrivateKey *=.*|PrivateKey = ${AWG_PRIVATE_KEY}|" /app/awg.conf
 else
-    echo "AWG_PRIVATE_KEY is not set, use default WARP PrivateKey"
+    echo "AWG_PRIVATE_KEY is not set, use default WARP PrivateKey."
 fi
 
 if [ -n "$AWG_ENDPOINT" ]; then
