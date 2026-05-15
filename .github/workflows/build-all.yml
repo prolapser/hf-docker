@@ -1,0 +1,78 @@
+name: Dynamic Build and Publish
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed services
+        id: set-matrix
+        run: |
+          SERVICES=()
+          
+          # Ищем все папки на первом уровне, в которых есть файл Dockerfile
+          for dockerfile in */Dockerfile; do
+            DIR=$(dirname "$dockerfile")
+            
+            if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+              # Если запустили руками через кнопку — собираем ВСЕ сервисы
+              SERVICES+=("\"$DIR\"")
+            else
+              # Если это git push — проверяем, менялись ли файлы в этой папке
+              # Сравниваем коммит до пуша и текущий коммит
+              if git diff --name-only ${{ github.event.before }} ${{ github.sha }} 2>/dev/null | grep -q "^$DIR/"; then
+                SERVICES+=("\"$DIR\"")
+              fi
+            fi
+          done
+
+          # Формируем JSON-массив, например: ["service-a", "service-c"]
+          JSON_ARRAY="[$(IFS=,; echo "${SERVICES[*]}")]"
+          
+          echo "Измененные сервисы: $JSON_ARRAY"
+          
+          # Передаем массив в следующий Job
+          echo "matrix=$JSON_ARRAY" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    needs: setup-matrix
+    if: ${{ needs.setup-matrix.outputs.matrix != '[]' && needs.setup-matrix.outputs.matrix != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.setup-matrix.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image for ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:latest
