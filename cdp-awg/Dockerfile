@@ -21,7 +21,7 @@ RUN echo "deb http://deb.debian.org/debian trixie contrib" >> /etc/apt/sources.l
     apt-get install -y --no-install-recommends nodejs && \
     uv venv --python 3.14 && uv pip install pip && ln -s /app/.venv/bin/* /usr/local/bin/ && \
     pip install --no-cache-dir playwright && playwright install-deps chromium 2>/dev/null || true && pip uninstall -y playwright && \
-    pip install cloakbrowser[serve,geoip] && \
+    pip install cloakbrowser[serve,geoip] && touch /.dockerenv && \
     mkdir -p  ~/.cloakbrowser && touch ~/.cloakbrowser/.welcome_show && \
     find /app/.venv -path "*/cloakbrowser/download.py" -exec sed -i 's/logger.info/logger.debug/g' {} + && \
     python -c "from cloakbrowser import ensure_binary; ensure_binary()" && \
@@ -32,7 +32,6 @@ RUN echo "deb http://deb.debian.org/debian trixie contrib" >> /etc/apt/sources.l
 
 COPY --chmod=755 <<-"EOF" /app/start.sh
 #!/bin/bash
-touch /.dockerenv
 export no_proxy="localhost,127.0.0.1,0.0.0.0"
 export NO_PROXY="localhost,127.0.0.1,0.0.0.0"
 export HTTPX_LOG_LEVEL=warning
