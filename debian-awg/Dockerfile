@@ -60,7 +60,7 @@ else
 fi
 
 if [ -n "$AWG_ENDPOINT" ]; then
-    echo "configuring WARP Endpoint..."
+    echo "configuring WARP Endpoint: ${AWG_ENDPOINT}"
     sed -i "s|^Endpoint *=.*|Endpoint = ${AWG_ENDPOINT}|" /app/awg.conf
 else
     echo "AWG_ENDPOINT is not set, use random WARP endpoint:"
