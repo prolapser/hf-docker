@@ -1,0 +1,61 @@
+FROM debian:stable-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ENV PATH="/app/.venv/bin:$PATH"
+WORKDIR /app
+
+RUN echo "deb http://deb.debian.org/debian trixie contrib" >> /etc/apt/sources.list.d/contrib.list && \
+    echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    curl git wget ca-certificates \
+    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+    libdbus-1-3 libdrm2 libxkbcommon0 libatspi2.0-0 libxcomposite1 \
+    libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 \
+    libcairo2 libasound2 libx11-xcb1 libfontconfig1 libx11-6 \
+    libxcb1 libxext6 libxshmfence1 \
+    libglib2.0-0 libgtk-3-0 libpangocairo-1.0-0 libcairo-gobject2 \
+    libgdk-pixbuf-2.0-0 libxss1 libxtst6 fonts-liberation \
+    fonts-noto-color-emoji fonts-unifont fonts-freefont-ttf \
+    fonts-ipafont-gothic fonts-wqy-zenhei fonts-tlwg-loma-otf \
+    libgl1-mesa-dri libegl-mesa0 xvfb xdotool \
+    procps xclip ffmpeg unzip privoxy ttf-mscorefonts-installer && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    uv venv --python 3.14 && uv pip install pip && ln -s /app/.venv/bin/* /usr/local/bin/ && \
+    pip install --no-cache-dir playwright && playwright install-deps chromium 2>/dev/null || true && pip uninstall -y playwright && \
+    pip install cloakbrowser[serve,geoip] && \
+    mkdir -p  ~/.cloakbrowser && touch ~/.cloakbrowser/.welcome_show && \
+    find /app/.venv -path "*/cloakbrowser/download.py" -exec sed -i 's/logger.info/logger.debug/g' {} + && \
+    python -c "from cloakbrowser import ensure_binary; ensure_binary()" && \
+    curl -L https://raw.githubusercontent.com/CloakHQ/CloakBrowser/refs/heads/main/bin/cloakserve -o /app/.venv/bin/cloakserve && \
+    sed -i 's/level=logging.INFO/level=logging.WARNING/g' /app/.venv/bin/cloakserve && \
+    sed -i '/logger = logging.getLogger("cloakserve")/a logger.setLevel(logging.INFO)' /app/.venv/bin/cloakserve && \
+    chmod +x /app/.venv/bin/cloakserve && fc-cache -f && rm -rf /var/lib/apt/lists/* /root/.cache/*
+
+COPY <<-"EOF" /app/resolv.conf
+nameserver 1.1.1.1
+nameserver 1.0.0.1
+nameserver 2606:4700:4700::1111
+nameserver 2606:4700:4700::1002
+EOF
+
+COPY --chmod=755 <<-"EOF" /app/start.sh
+#!/bin/bash
+cat /app/resolv.conf > /etc/resolv.conf
+touch /.dockerenv
+export HTTPX_LOG_LEVEL=warning
+export DISPLAY=:99
+Xvfb :99 -screen 0 1920x1080x24 -nolisten tcp &
+sleep 1
+echo -e "\n==================================\nstarting chromium cdp server...\nconnect:\nwith sync_playwright() as p:\n    browser = p.chromium.connect_over_cdp('https://username-spacename.hf.space?fingerprint=<seed>')\n==================================\n"
+exec /app/.venv/bin/cloakserve \
+    --port=7860 \
+    --log-level=3 \
+    --no-sandbox \
+    --disable-setuid-sandbox \
+    --disable-gpu \
+    --disable-vulkan \
+    --disable-dev-shm-usage
+EOF
+
+CMD ["/bin/bash", "/app/start.sh"]
