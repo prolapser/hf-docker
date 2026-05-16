@@ -87,7 +87,16 @@ export HTTPS_PROXY="socks5h://127.0.0.1:25344"
 export ALL_PROXY="socks5h://127.0.0.1:25344"
 echo "test system-wide proxy:"
 curl -sS 2ip.me
-speedtest-go --proxy=socks5h://127.0.0.1:25344
+
+case "${SPEEDTEST,,}" in
+    (true|yes|y|on|1)
+        speedtest-go --proxy=socks5h://127.0.0.1:25344
+        ;;
+    (*)
+        echo "ENV SPEEDTEST is not set to a true-like boolean, speedtest skipping"
+        ;;
+esac
+
 echo -e "\n\n==================================\nWARP ON: socks5h://127.0.0.1:25344\n==================================\n\n"
 exec "$@"
 EOF
