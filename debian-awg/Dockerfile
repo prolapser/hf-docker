@@ -4,7 +4,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y curl git ca-certificates && apt-get clean && \
     curl -L -sS https://github.com/artem-russkikh/wireproxy-awg/releases/latest/download/wireproxy_linux_amd64.tar.gz -o /app/awg.tar.gz && \
-    tar -xzf /app/awg.tar.gz -C /app && rm /app/awg.tar.gz && mv /app/wireproxy /app/awg && chmod +x /app/awg
+    tar -xzf /app/awg.tar.gz -C /app && rm /app/awg.tar.gz && mv /app/wireproxy /app/awg && chmod +x /app/awg && \
+    curl -sS https://api.github.com/repos/nicholas-fedor/speedtest-go/releases/latest | grep -E 'browser_download_url.*linux_amd64.*\.tar\.gz"' | cut -d '"' -f 4 | head -n 1 | xargs -I {} curl -L {} | tar -xz -C /usr/local/bin
 
 COPY <<-"EOF" /app/resolv.conf
 nameserver 1.1.1.1
@@ -86,6 +87,7 @@ export HTTPS_PROXY="socks5h://127.0.0.1:25344"
 export ALL_PROXY="socks5h://127.0.0.1:25344"
 echo "test system-wide proxy:"
 curl -sS 2ip.me
+speedtest-go --proxy=socks5h://127.0.0.1:25344
 echo -e "\n\n==================================\nWARP ON: socks5h://127.0.0.1:25344\n==================================\n\n"
 exec "$@"
 EOF
