@@ -32,7 +32,6 @@ RUN echo "deb http://deb.debian.org/debian trixie contrib" >> /etc/apt/sources.l
 
 COPY --chmod=755 <<-"EOF" /app/start.sh
 #!/bin/bash
-speedtest-go --proxy=socks5h://127.0.0.1:25344
 touch /.dockerenv
 export no_proxy="localhost,127.0.0.1,0.0.0.0"
 export NO_PROXY="localhost,127.0.0.1,0.0.0.0"
