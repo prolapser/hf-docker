@@ -30,6 +30,22 @@ RUN echo "deb http://deb.debian.org/debian trixie contrib" >> /etc/apt/sources.l
     curl -L https://raw.githubusercontent.com/CloakHQ/CloakBrowser/refs/heads/main/bin/cloakserve -o /app/.venv/bin/cloakserve && \
     sed -i 's/level=logging.INFO/level=logging.WARNING/g' /app/.venv/bin/cloakserve && \
     sed -i '/logger = logging.getLogger("cloakserve")/a logger.setLevel(logging.INFO)' /app/.venv/bin/cloakserve && \
+    sed -i 's/"--disable-extensions",//g' /app/.venv/bin/cloakserve && \
+    curl -L "https://clients2.google.com/service/update2/crx?response=redirect&arch=x86-64&os_arch=x86-64&nacl_arch=x86-64&prod=chromecrx&prodchannel=unknown&prodversion=9999.0.9999.0&acceptformat=crx2,crx3&x=id%3Dddkjiahejlhfcafbddmgiahcphecmpfh%26uc" -o /tmp/ext.zip && \
+    mkdir -p /app/extensions/ublock && unzip -q /tmp/ext.zip -d /app/extensions/ublock || true && \
+    curl -L "https://clients2.google.com/service/update2/crx?response=redirect&arch=x86-64&os_arch=x86-64&nacl_arch=x86-64&prod=chromecrx&prodchannel=unknown&prodversion=9999.0.9999.0&acceptformat=crx2,crx3&x=id%3Dnngceckbapebfimnlniiiahkandclblb%26uc" -o /tmp/ext.zip && \
+    mkdir -p /app/extensions/bitwarden && unzip -q /tmp/ext.zip -d /app/extensions/bitwarden || true && \
+    curl -L "https://clients2.google.com/service/update2/crx?response=redirect&arch=x86-64&os_arch=x86-64&nacl_arch=x86-64&prod=chromecrx&prodchannel=unknown&prodversion=9999.0.9999.0&acceptformat=crx2,crx3&x=id%3Daapbdbdomjkkjkaonfhkkikfgjllcleb%26uc" -o /tmp/ext.zip && \
+    mkdir -p /app/extensions/gtranslate && unzip -q /tmp/ext.zip -d /app/extensions/gtranslate || true && \
+    curl -L "https://clients2.google.com/service/update2/crx?response=redirect&arch=x86-64&os_arch=x86-64&nacl_arch=x86-64&prod=chromecrx&prodchannel=unknown&prodversion=9999.0.9999.0&acceptformat=crx2,crx3&x=id%3Dkbfnbcaeplbcioakkpcpgfkobkghlhen%26uc" -o /tmp/ext.zip && \
+    mkdir -p /app/extensions/grammarly && unzip -q /tmp/ext.zip -d /app/extensions/grammarly || true && \
+    curl -L "https://clients2.google.com/service/update2/crx?response=redirect&arch=x86-64&os_arch=x86-64&nacl_arch=x86-64&prod=chromecrx&prodchannel=unknown&prodversion=9999.0.9999.0&acceptformat=crx2,crx3&x=id%3Dedibdbjcniadpccecjdfdjjppcpchdlm%26uc" -o /tmp/ext.zip && \
+    mkdir -p /app/extensions/cookies && unzip -q /tmp/ext.zip -d /app/extensions/cookies || true && \
+    curl -L "https://clients2.google.com/service/update2/crx?response=redirect&arch=x86-64&os_arch=x86-64&nacl_arch=x86-64&prod=chromecrx&prodchannel=unknown&prodversion=9999.0.9999.0&acceptformat=crx2,crx3&x=id%3Dladdjijkcfpakbbnnedbhnnciecidncp%26uc" -o /tmp/ext.zip && \
+    mkdir -p /app/extensions/yasearch && unzip -q /tmp/ext.zip -d /app/extensions/yasearch || true && \
+    curl -L "https://github.com/ClearURLs/Addon/releases/download/1.27.3/ClearURLs.zip" -o /tmp/ext.zip && \
+    mkdir -p /app/extensions/clearurls && unzip -q /tmp/ext.zip -d /app/extensions/clearurls || true && \
+	rm /tmp/ext.zip && \
     chmod +x /app/.venv/bin/cloakserve && fc-cache -f && rm -rf /var/lib/apt/lists/* /root/.cache/*
 
 COPY <<-"EOF" /app/resolv.conf
@@ -55,7 +71,8 @@ exec /app/.venv/bin/cloakserve \
     --disable-setuid-sandbox \
     --disable-gpu \
     --disable-vulkan \
-    --disable-dev-shm-usage
+    --disable-dev-shm-usage \
+    --load-extension="/app/extensions/clearurls,/app/extensions/cookies,/app/extensions/grammarly,/app/extensions/gtranslate,/app/extensions/bitwarden,/app/extensions/ublock,/app/extensions/yasearch"
 EOF
 
 CMD ["/bin/bash", "/app/start.sh"]
