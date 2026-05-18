@@ -1,82 +1,90 @@
 ## ghcr.io/prolapser/debian-awg:latest
 
-Базовый debian-образ с настроенным прокси через Cloudflare WARP, подменой DNS и поднятым прокси для запуска любых приложений. 
+Базовый Debian-образ с предустановленным прокси через Cloudflare WARP, подменой DNS и SOCKS5-прокси для запуска произвольных приложений.
+
+[Создайте спейс](https://huggingface.co/new-space?sdk=docker) и добавьте `Dockerfile`:
 
 ```dockerfile
 FROM ghcr.io/prolapser/debian-awg:latest
 
-# например можно установить Python
+# Установка Python через uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 ENV PATH="/app/.venv/bin:$PATH"
 
-# установить какие-то зависимости
+# Системные зависимости и Python-пакеты
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg privoxi wget && \
     rm -rf /var/lib/apt/lists/* && \
-    uv venv --python 3.14 && uv pip install pip && ln -s /app/.venv/bin/* /usr/local/bin/ && \
+    uv venv --python 3.14 && uv pip install pip && \
+    ln -s /app/.venv/bin/* /usr/local/bin/ && \
     pip install --no-cache-dir httpx[h2] fastapi kurigram
 
-# скопировать файлы телеграм-бота
 COPY . /app
 
-# настроить переменные окружения если нужно
+# Опциональные переменные окружения
 # ENV AWG_ENDPOINT="188.114.98.219:4500"
-# ENV AWG_ENDPOINT="engage.cloudflareclient.com:2408
+# ENV AWG_ENDPOINT="engage.cloudflareclient.com:2408"
 # ENV AWG_PRIVATE_KEY="92U7B78AsTysmmIbzoCJ4XqzGpEyGo8RKjU6os7hdLE="
-# ENV SPEEDTEST true
+# ENV SPEEDTEST=true
 
-# запустить
+# Запуск приложения
 CMD ["python", "/app/main.py"]
 ```
 
-После запуска контейнера прокси-сервер SOCKS5 доступен по адресу: `socks5h://127.0.0.1:25344` или `socks5://127.0.0.1:25344`, он устанавливается системно через переменные среды, но если ваше приложение их не уважает, можно установить вручную.
+После запуска SOCKS5-прокси доступен на `socks5h://127.0.0.1:25344` (или `socks5://127.0.0.1:25344`). Прокси прописывается системно через переменные среды — если приложение их игнорирует, укажите адрес вручную.
 
-Этот базовый образ занимает примерно 150 Мб.
+**Размер образа:** ~150 МБ
 
 ---
 
 ## ghcr.io/prolapser/hf-docker/cdp-awg:latest
 
-Удаленный браузер [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) управляемый через [CDP](https://playwright.dev/python/docs/api/class-browsertype#browser-type-connect-over-cdp) (Connecting over the Chrome DevTools Protocol) с глобальным проксированием через CloudFlare WARP с обфускацией AmneziaWG:
+Удалённый браузер [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) с управлением через [CDP](https://playwright.dev/python/docs/api/class-browsertype#browser-type-connect-over-cdp) и глобальным проксированием через Cloudflare WARP с обфускацией AmneziaWG.
 
-```text
-ip        : 104.28.196.75
-provider  : Cloudflare Inc.
-location  : United States Of America (US), Washington
+Исходящий IP:
+
+```
+ip       : 104.28.196.75
+provider : Cloudflare Inc.
+location : United States Of America (US), Washington
 ```
 
-Достаточно [создать спейс](https://huggingface.co/new-space?sdk=docker) и добавить файл `Dockerfile` минимального содержания:
+Минимальный `Dockerfile`:
 
 ```dockerfile
 FROM ghcr.io/prolapser/hf-docker/cdp-awg:latest
 ```
 
-Но, можно настроить используя переменные среды:
+### Переменные окружения
 
-- `AWG_PRIVATE_KEY="***"`: PrivateKey из своего конфига WG/AmneziaWG CloudFlare WARP (если не установлено подставится случайный).
-- `AWG_ENDPOINT="host:port"`: эндпоинт CloudFlare WARP (если не установлено подставится случайный).
-- `SPEEDTEST true/false`: выполнять ли при старте проверку скорости соединения и пинг через AmneziaWG (отключено по дефолту).
-- `CLOAKBROWSER_AUTO_UPDATE true/false`: включать ли фоновую проверку обновлений браузера (включено по дефолту).
-- `CLOAKBROWSER_SKIP_CHECKSUM true/false`: пропускать ли проверку SHA-256 после загрузки браузера (включено по дефолту).
-- `CLOAKBROWSER_GEOIP_TIMEOUT_SECONDS 5`: таймаут в секундах для разрешения GeoIP, прежде чем продолжить без него (5 по дефолту)
+| Переменная                           | По умолчанию | Описание                                           |
+|--------------------------------------|--------------|----------------------------------------------------|
+| `AWG_PRIVATE_KEY`                    | случайный    | PrivateKey из конфига WG/AmneziaWG Cloudflare WARP |
+| `AWG_ENDPOINT`                       | случайный    | Эндпоинт Cloudflare WARP в формате `host:port`     |
+| `SPEEDTEST`                          | `false`      | Тест скорости и пинга через AmneziaWG при старте   |
+| `CLOAKBROWSER_AUTO_UPDATE`           | `true`       | Фоновая проверка обновлений браузера               |
+| `CLOAKBROWSER_SKIP_CHECKSUM`         | `true`       | Пропуск проверки SHA-256 после загрузки            |
+| `CLOAKBROWSER_GEOIP_TIMEOUT_SECONDS` | `5`          | Таймаут GeoIP-резолвинга в секундах                |
 
-Пример докерфайла с настройками:
+Пример с явными настройками:
 
 ```dockerfile
 FROM ghcr.io/prolapser/hf-docker/cdp-awg:latest
 
-# ENV AWG_ENDPOINT="188.114.98.219:4500"
-ENV AWG_ENDPOINT="engage.cloudflareclient.com:2408
+ENV AWG_ENDPOINT="engage.cloudflareclient.com:2408"
 ENV AWG_PRIVATE_KEY="92U7B78AsTysmmIbzoCJ4XqzGpEyGo8RKjU6os7hdLE="
-ENV SPEEDTEST true
-ENV CLOAKBROWSER_AUTO_UPDATE false
-ENV CLOAKBROWSER_SKIP_CHECKSUM false
-ENV CLOAKBROWSER_GEOIP_TIMEOUT_SECONDS 10
+ENV SPEEDTEST=true
+ENV CLOAKBROWSER_AUTO_UPDATE=false
+ENV CLOAKBROWSER_SKIP_CHECKSUM=false
+ENV CLOAKBROWSER_GEOIP_TIMEOUT_SECONDS=10
 ```
 
-Этот образ занимает примерно 2 Гб.
+**Размер образа:** ~2 ГБ
 
-Пример использования в синхронном коде:
+> **Когда использовать этот образ?**
+> Если целевые сайты блокируют доступ с IP облачных провайдеров, появляются капчи, и т.п. Вариант с WARP нужен только когда необходима маскировка трафика как дополнительная способ обхода анти-бот защиты. Но, проксирование увеличивает пинг и снижает скорость соединения, операции через WSS между клиентом и браузером могут выполняться медленнее. Если маскировка трафика не нужна, лучше предпочесть варинат без AmneziaWG и WARP ниже.
+
+### Пример: поиск через Яндекс на Python
 
 ```python
 from urllib.parse import quote, urlencode
@@ -164,54 +172,59 @@ if __name__ == "__main__":
     test('bufo bufo care', 'yandex_search')
 ```
 
-Помимо [Playwright-Python](https://github.com/microsoft/playwright-python) по CDP можно подключаться и использовать любые други библиотеки автоматизации и управления браузеров через DevTool, в том числе других языках программирования:
+### Поддерживаемые CDP-клиенты
 
-- **Go**: [go-rod](https://github.com/go-rod/rod), [chromedp](https://github.com/chromedp/chromedp), [playwright-go](https://github.com/playwright-community/playwright-go)
-- **Node.js**: [Puppeteer](https://github.com/puppeteer/puppeteer), [Playwright](https://github.com/microsoft/playwright)
+Помимо Playwright для Python, к браузеру можно подключиться из любого языка и инструмента с поддержкой Chrome DevTools Protocol:
+
+- **Go:** [go-rod](https://github.com/go-rod/rod), [chromedp](https://github.com/chromedp/chromedp), [playwright-go](https://github.com/playwright-community/playwright-go)
+- **Node.js:** [Puppeteer](https://github.com/puppeteer/puppeteer), [Playwright](https://github.com/microsoft/playwright)
 - и другие...
 
-Чтобы узнать WSS ссылку на DevTools, посмотрите ее у себя: `https://username-spacename.hf.space/json/list`
+WSS-ссылку на DevTools можно получить по адресу: `https://username-spacename.hf.space/json/list`
 
 ---
 
 ## ghcr.io/prolapser/hf-docker/cdp:latest
 
-Удаленный браузер [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) управляемый через [CDP](https://playwright.dev/python/docs/api/class-browsertype#browser-type-connect-over-cdp) (Connecting over the Chrome DevTools Protocol) без прокси, будучи запущенным на HuggingFace Space использует его IP напрямую:
+Удалённый браузер [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) с управлением через [CDP](https://playwright.dev/python/docs/api/class-browsertype#browser-type-connect-over-cdp) **без прокси** — трафик идёт напрямую с IP HuggingFace Space.
 
-```text
-ip        : 3.228.31.30
-provider  : Amazon.com Inc.
-location  : United States Of America (US), Ashburn
+Исходящий IP:
+
+```
+ip       : 3.228.31.30
+provider : Amazon.com Inc.
+location : United States Of America (US), Ashburn
 ```
 
-Однако, для обхода заблокированных сайтов со стороны HF, в образе настроена подмена DNS записей на CloudFlare.
+Для обхода блокировок со стороны HF в образе настроена подмена DNS на Cloudflare.
 
-Достаточно [создать спейс](https://huggingface.co/new-space?sdk=docker) и добавить файл `Dockerfile` минимального содержания:
+Минимальный `Dockerfile`:
+
+```dockerfile
+FROM ghcr.io/prolapser/hf-docker/cdp:latest
+```
+
+### Переменные окружения
+
+| Переменная                           | По умолчанию | Описание                                |
+|--------------------------------------|--------------|-----------------------------------------|
+| `SPEEDTEST`                          | `false`      | Тест скорости и пинга при старте        |
+| `CLOAKBROWSER_AUTO_UPDATE`           | `true`       | Фоновая проверка обновлений браузера    |
+| `CLOAKBROWSER_SKIP_CHECKSUM`         | `true`       | Пропуск проверки SHA-256 после загрузки |
+| `CLOAKBROWSER_GEOIP_TIMEOUT_SECONDS` | `5`          | Таймаут GeoIP-резолвинга в секундах     |
+
+Пример с явными настройками:
 
 ```dockerfile
 FROM ghcr.io/prolapser/hf-docker/cdp:latest
 
-# nothing
+ENV SPEEDTEST=true
+ENV CLOAKBROWSER_AUTO_UPDATE=false
+ENV CLOAKBROWSER_SKIP_CHECKSUM=false
+ENV CLOAKBROWSER_GEOIP_TIMEOUT_SECONDS=10
 ```
 
-Но, можно настроить используя переменные среды:
+**Размер образа:** ~2 ГБ
 
-- `SPEEDTEST true/false`: выполнять ли при старте проверку скорости соединения и пинг через AmneziaWG (отключено по дефолту).
-- `CLOAKBROWSER_AUTO_UPDATE true/false`: включать ли фоновую проверку обновлений браузера (включено по дефолту).
-- `CLOAKBROWSER_SKIP_CHECKSUM true/false`: пропускать ли проверку SHA-256 после загрузки браузера (включено по дефолту).
-- `CLOAKBROWSER_GEOIP_TIMEOUT_SECONDS 5`: таймаут в секундах для разрешения GeoIP, прежде чем продолжить без него (5 по дефолту)
-
-Пример докерфайла с настройками:
-
-```dockerfile
-FROM ghcr.io/prolapser/hf-docker/cdp:latest
-
-ENV SPEEDTEST true
-ENV CLOAKBROWSER_AUTO_UPDATE false
-ENV CLOAKBROWSER_SKIP_CHECKSUM false
-ENV CLOAKBROWSER_GEOIP_TIMEOUT_SECONDS 10
-```
-
-Этот образ занимает примерно 2 Гб.
-
-Этот образ предпочтительнее образа с AmneziaWG, потому что пересылка WSS сообщений между браузером и клиентом будет быстрее, значительно меньше пинг. Вариант с проксирвоанием через WARP нужен только в некоторых случаях, когда на целевых сайтах сложная анти-бот проверка, например как поиске Яндекс.
+> **Когда использовать этот образ?**
+> Если целевые сайты не требуют сложной антибот-защиты — предпочтите этот образ варианту с AmneziaWG. Прямое соединение даёт заметно меньший пинг и более быструю передачу WSS-сообщений. Вариант с WARP оправдан только там, где необходима дополнительная маскировка трафика — например, в поиске Яндекса.
