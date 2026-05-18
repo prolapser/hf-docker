@@ -1,3 +1,5 @@
+## ghcr.io/prolapser/debian-awg:latest
+
 Базовый debian-образ с настроенным прокси через Cloudflare WARP, подменой DNS и поднятым прокси для запуска любых приложений. 
 
 ```dockerfile
@@ -32,6 +34,8 @@ CMD ["python", "/app/main.py"]
 Этот базовый образ занимает примерно 150 Мб.
 
 ---
+
+## ghcr.io/prolapser/hf-docker/cdp-awg:latest
 
 Удаленный браузер [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) управляемый через [CDP](https://playwright.dev/python/docs/api/class-browsertype#browser-type-connect-over-cdp) (Connecting over the Chrome DevTools Protocol) с глобальным проксированием через CloudFlare WARP с обфускацией AmneziaWG:
 
@@ -169,6 +173,8 @@ if __name__ == "__main__":
 Чтобы узнать WSS ссылку на DevTools, посмотрите ее у себя: `https://username-spacename.hf.space/json/list`
 
 ---
+
+## ghcr.io/prolapser/hf-docker/cdp:latest
 
 Удаленный браузер [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) управляемый через [CDP](https://playwright.dev/python/docs/api/class-browsertype#browser-type-connect-over-cdp) (Connecting over the Chrome DevTools Protocol) без прокси, будучи запущенным на HuggingFace Space использует его IP напрямую:
 
