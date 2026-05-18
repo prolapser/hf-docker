@@ -71,6 +71,9 @@ exec /app/.venv/bin/cloakserve \
     --disable-setuid-sandbox \
     --disable-gpu \
     --disable-vulkan \
+    --window-size=1920,1080 \
+    --start-maximized \
+    --headless=false \
     --disable-dev-shm-usage \
     --load-extension="/app/extensions/clearurls,/app/extensions/cookies,/app/extensions/grammarly,/app/extensions/gtranslate,/app/extensions/bitwarden,/app/extensions/ublock,/app/extensions/yasearch"
 EOF
