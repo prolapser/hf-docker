@@ -162,11 +162,9 @@ if __name__ == "__main__":
 
 Помимо [Playwright-Python](https://github.com/microsoft/playwright-python) по CDP можно подключаться и использовать любые други библиотеки автоматизации и управления браузеров через DevTool, в том числе других языках программирования:
 
-https://github.com/go-rod/rod
-https://github.com/chromedp/chromedp
-https://github.com/playwright-community/playwright-go
-https://github.com/puppeteer/puppeteer
-https://github.com/microsoft/playwright
+- **Go**: [go-rod](https://github.com/go-rod/rod), [chromedp](https://github.com/chromedp/chromedp), [playwright-go](https://github.com/playwright-community/playwright-go)
+- **Node.js**: [Puppeteer](https://github.com/puppeteer/puppeteer), [Playwright](https://github.com/microsoft/playwright)
+- и другие...
 
 Чтобы узнать WSS ссылку на DevTools, посмотрите ее у себя: `https://username-spacename.hf.space/json/list`
 
