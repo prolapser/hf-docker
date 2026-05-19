@@ -46,7 +46,7 @@ const indexHTML = `
 `
 
 func writeQBConfig() {
-	configDir := "/home/user/profile/qBittorrent/config"
+	configDir := "/app/profile/qBittorrent/config"
 	os.MkdirAll(configDir, 0755)
 
 	configData := `[LegalNotice]
@@ -66,17 +66,17 @@ WebUI\AuthSubnetWhitelist=127.0.0.1/32
 
 func main() {
 	// 1. Подготовка директорий и конфигов
-	os.MkdirAll("/home/user/downloads", 0755)
+	os.MkdirAll("/app/downloads", 0755)
 	writeQBConfig()
 
 	// 2. Запуск Filebrowser (на порту 8081)
 	fbCmd := exec.Command("./fb",
 		"-a", "127.0.0.1",
 		"-p", "8081",
-		"-r", "/home/user/downloads",
+		"-r", "/app/downloads",
 		"--noauth",
 		"-b", "/fb",
-		"-d", "/home/user/fb.db",
+		"-d", "/app/fb.db",
 	)
 	fbCmd.Stdout = os.Stdout
 	fbCmd.Stderr = os.Stderr
@@ -88,8 +88,8 @@ func main() {
 	// 3. Запуск qBittorrent (на порту 8082)
 	qbCmd := exec.Command("./qb",
 		"--webui-port=8082",
-		"--profile=/home/user/profile",
-		"--save-path=/home/user/downloads",
+		"--profile=/app/profile",
+		"--save-path=/app/downloads",
 	)
 	qbCmd.Stdout = os.Stdout
 	qbCmd.Stderr = os.Stderr
