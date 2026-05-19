@@ -57,6 +57,15 @@ WebUI\Port=8082
 WebUI\LocalHostAuth=false
 WebUI\AuthSubnetWhitelistEnabled=true
 WebUI\AuthSubnetWhitelist=127.0.0.1/32
+Connection\ProxyType=SOCKS5
+Connection\ProxyIP=127.0.0.1
+Connection\ProxyPort=25344
+Connection\ProxyPeerConnections=true
+Connection\ProxyTrackerConnections=true
+Connection\ProxyHostNameLookup=true
+Connection\ProxyForce=true
+Connection\ResolvePeerCountries=false
+Bittorrent\uTP_rate_limited=false
 `
 	err := os.WriteFile(filepath.Join(configDir, "qBittorrent.conf"), []byte(configData), 0644)
 	if err != nil {
