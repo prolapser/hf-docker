@@ -32,7 +32,7 @@ const indexHTML = `
         <div class="tab active" onclick="switchTab('/fb/', this)">Filebrowser</div>
         <div class="tab" onclick="switchTab('qb-ui', this)">qBittorrent</div>
     </div>
-    <iframe id="frame" src="/qb-ui"></iframe>
+    <iframe id="frame" src="/fb"></iframe>
 
     <script>
         function switchTab(url, el) {
@@ -46,26 +46,46 @@ const indexHTML = `
 `
 
 func writeQBConfig() {
-	configDir := "/app/profile/qBittorrent/config"
+	configDir := "./profile/qBittorrent/config"
 	os.MkdirAll(configDir, 0755)
 
-	configData := `[LegalNotice]
+	// Конфиг qBittorrent 5.x
+	configData := `[Application]
+FileLogger\Enabled=false
+FileLogger\MaxSizeBytes=1024
+FileLogger\Path=/app/logs
+
+[BitTorrent]
+MergeTrackersEnabled=true
+Session\GlobalMaxSeedingMinutes=0
+Session\MultiConnectionsPerIp=true
+Session\Preallocation=true
+Session\ProxyPeerConnections=true
+Session\QueueingSystemEnabled=false
+Session\ValidateHTTPSTrackerCertificate=false
+
+[LegalNotice]
 Accepted=true
 
+[Network]
+Proxy\AuthEnabled=false
+Proxy\HostnameLookupEnabled=true
+Proxy\IP=127.0.0.1
+Proxy\Password=
+Proxy\Port=@Variant(\0\0\0\x85\x63\0)
+Proxy\Profiles\BitTorrent=true
+Proxy\Profiles\Misc=true
+Proxy\Profiles\RSS=true
+Proxy\Type=SOCKS5
+Proxy\Username=
+
 [Preferences]
+Advanced\IgnoreSSLErrors=true
+General\Locale=en
 WebUI\Port=8082
 WebUI\LocalHostAuth=false
 WebUI\AuthSubnetWhitelistEnabled=true
 WebUI\AuthSubnetWhitelist=127.0.0.1/32
-Connection\ProxyType=SOCKS5
-Connection\ProxyIP=127.0.0.1
-Connection\ProxyPort=25344
-Connection\ProxyPeerConnections=true
-Connection\ProxyTrackerConnections=true
-Connection\ProxyHostNameLookup=true
-Connection\ProxyForce=true
-Connection\ResolvePeerCountries=false
-Bittorrent\uTP_rate_limited=false
 `
 	err := os.WriteFile(filepath.Join(configDir, "qBittorrent.conf"), []byte(configData), 0644)
 	if err != nil {
@@ -74,18 +94,18 @@ Bittorrent\uTP_rate_limited=false
 }
 
 func main() {
-	// 1. Подготовка директорий и конфигов
-	os.MkdirAll("/app/downloads", 0755)
+	// 1. Подготовка директорий (используем ./ чтобы не зависеть от /home/user или /app)
+	os.MkdirAll("./downloads", 0755)
 	writeQBConfig()
 
-	// 2. Запуск Filebrowser (на порту 8081)
+	// 2. Запуск Filebrowser
 	fbCmd := exec.Command("./fb",
 		"-a", "127.0.0.1",
 		"-p", "8081",
-		"-r", "/app/downloads",
+		"-r", "./downloads",
 		"--noauth",
 		"-b", "/fb",
-		"-d", "/app/fb.db",
+		"-d", "./filebrowser.db",
 	)
 	fbCmd.Stdout = os.Stdout
 	fbCmd.Stderr = os.Stderr
@@ -94,18 +114,18 @@ func main() {
 	}
 	fmt.Println("Filebrowser запущен на 127.0.0.1:8081")
 
-	// 3. Запуск qBittorrent (на порту 8082)
+	// 3. Запуск qBittorrent
 	qbCmd := exec.Command("./qb",
 		"--webui-port=8082",
-		"--profile=/app/profile",
-		"--save-path=/app/downloads",
+		"--profile=./profile",
+		"--save-path=./downloads",
 	)
 	qbCmd.Stdout = os.Stdout
 	qbCmd.Stderr = os.Stderr
 	if err := qbCmd.Start(); err != nil {
-		log.Fatalf("Не удалось запустить qBittorrent: %v", err)
+		log.Fatalf("Не удалось запустить qB***: %v", err)
 	}
-	fmt.Println("qBittorrent запущен на 127.0.0.1:8082")
+	fmt.Println("qB*** запущен на 127.0.0.1:8082")
 
 	// 4. Настройка Reverse Proxy
 	fbURL, _ := url.Parse("http://127.0.0.1:8081")
@@ -115,32 +135,25 @@ func main() {
 	qbProxy := httputil.NewSingleHostReverseProxy(qbURL)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Главная страница с вкладками
 		if r.URL.Path == "/" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Write([]byte(indexHTML))
 			return
 		}
-
-		// Виртуальный путь для загрузки WebUI qBittorrent в iframe
 		if r.URL.Path == "/qb-ui" {
 			r.URL.Path = "/"
 			qbProxy.ServeHTTP(w, r)
 			return
 		}
-
-		// Запросы к Filebrowser
 		if strings.HasPrefix(r.URL.Path, "/fb") {
 			fbProxy.ServeHTTP(w, r)
 			return
 		}
-
-		// Все остальные запросы (API, CSS, JS от qBittorrent) проксируются в qB
 		qbProxy.ServeHTTP(w, r)
 	})
 
 	// 5. Запуск веб-сервера на порту 7860
-	fmt.Println("Proxy сервер запущен на 0.0.0.0:7860")
+	fmt.Println("Сервер запущен на 0.0.0.0:7860")
 	if err := http.ListenAndServe("0.0.0.0:7860", nil); err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
 	}
