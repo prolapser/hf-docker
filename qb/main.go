@@ -17,30 +17,59 @@ const indexHTML = `
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>HF Seedbox</title>
+    <title>коробка семени</title>
     <style>
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; height: 100vh; background-color: #1e1e1e; color: white; }
-        .tabs { display: flex; background: #2d2d2d; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 10; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; transition: background 0.2s; border-bottom: 3px solid transparent; }
-        .tab:hover { background: #3d3d3d; }
-        .tab.active { background: #3d3d3d; border-bottom: 3px solid #007acc; font-weight: bold; }
-        iframe { flex: 1; border: none; width: 100%; height: 100%; background: #fff; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        h1 { margin-bottom: 40px; color: #007acc; font-weight: 300; letter-spacing: 2px; }
+        .container {
+            display: flex;
+            gap: 30px;
+        }
+        .card {
+            background: #2d2d2d;
+            padding: 40px 30px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            width: 220px;
+            border: 1px solid #3d3d3d;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            background: #363636;
+            border-color: #007acc;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,122,204,0.3);
+        }
+        .card h2 { margin: 0 0 15px 0; font-size: 24px; color: #fff; }
+        .card p { margin: 0; color: #a0a0a0; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('/fb/', this)">Filebrowser</div>
-        <div class="tab" onclick="switchTab('qb-ui', this)">qBittorrent</div>
+    <h1>коробка семени</h1>
+    <div class="container">
+        <a href="/qb-ui" target="_blank" class="card">
+            <h2>qB***</h2>
+            <p>Управление загрузками<br>(откроется в новой вкладке)</p>
+        </a>
+        <a href="/fb/" target="_blank" class="card">
+            <h2>Files</h2>
+            <p>Управление файлами<br>(откроется в новой вкладке)</p>
+        </a>
     </div>
-    <iframe id="frame" src="/fb"></iframe>
-
-    <script>
-        function switchTab(url, el) {
-            document.getElementById('frame').src = url;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-        }
-    </script>
 </body>
 </html>
 `
@@ -56,6 +85,7 @@ FileLogger\MaxSizeBytes=1024
 FileLogger\Path=/app/logs
 
 [BitTorrent]
+Session\DefaultSavePath=/app/downloads
 MergeTrackersEnabled=true
 Session\GlobalMaxSeedingMinutes=0
 Session\MultiConnectionsPerIp=true
@@ -94,15 +124,15 @@ WebUI\AuthSubnetWhitelist=127.0.0.1/32
 }
 
 func main() {
-	// 1. Подготовка директорий (используем ./ чтобы не зависеть от /home/user или /app)
-	os.MkdirAll("./downloads", 0755)
+	// 1. Подготовка директорий
+	os.MkdirAll("/app/downloads", 0755)
 	writeQBConfig()
 
 	// 2. Запуск Filebrowser
 	fbCmd := exec.Command("./fb",
 		"-a", "127.0.0.1",
 		"-p", "8081",
-		"-r", "./downloads",
+		"-r", "/app/downloads",
 		"--noauth",
 		"-b", "/fb",
 		"-d", "./filebrowser.db",
